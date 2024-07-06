@@ -2,6 +2,7 @@ const express = require("express");
 const { exec } = require("child_process");
 const app = express();
 const { platform } = require("os");
+const CDP = require("chrome-remote-interface");
 
 // Middleware to parse JSON and URL-encoded bodies
 app.use(express.json());
@@ -125,40 +126,52 @@ app.get("/cleanup", (req, res) => {
 });
 
 // API to get the current active tab's URL
-app.get("/geturl", (req, res) => {
+app.get("/geturl", async (req, res) => {
 	const browser = req.query.browser.toLowerCase();
 
-	switch (browser) {
-		case "chrome":
-			exec(
-				`start chrome --new-window "about:blank"`,
-				(error, stdout, stderr) => {
-					if (error) {
-						console.error(`Error getting URL from Chrome: ${error.message}`);
-						res.status(500).send("Failed to get URL from Chrome");
-						return;
-					}
-					console.log("Retrieved URL from Chrome");
-					res.send(stdout.trim());
-				}
+	if (browser === "chrome") {
+		try {
+			// Connect to Chrome via CDP
+			const client = await CDP();
+			const { Target } = client;
+
+			// Get a list of all open tabs
+			const targets = await Target.getTargets();
+			const activeTarget = targets.targetInfos.find(
+				(target) => target.type === "page" && target.attached
 			);
-			break;
-		case "firefox":
-			exec(`start firefox --new-tab "about:blank"`, (error, stdout, stderr) => {
-				if (error) {
-					console.error(`Error getting URL from Firefox: ${error.message}`);
-					res.status(500).send("Failed to get URL from Firefox");
-					return;
-				}
-				console.log("Retrieved URL from Firefox");
-				res.send(stdout.trim());
+
+			if (!activeTarget) {
+				throw new Error("No active tab found");
+			}
+
+			// Attach to the active tab
+			const { sessionId } = await Target.attachToTarget({
+				targetId: activeTarget.targetId,
+				flatten: true,
 			});
-			break;
-		default:
-			res.status(400).send("Unsupported browser");
+
+			// Get the current URL of the active tab
+			const { result } = await client.send("Runtime.evaluate", {
+				expression: "window.location.href",
+				returnByValue: true,
+				awaitPromise: true,
+				contextId: activeTarget.targetId,
+			});
+
+			const activeUrl = result.value;
+			await client.close();
+
+			console.log(`Active tab URL in Chrome: ${activeUrl}`);
+			res.send(activeUrl);
+		} catch (err) {
+			console.error("Error getting URL from Chrome:", err);
+			res.status(500).send("Failed to get URL from Chrome");
+		}
+	} else {
+		res.status(400).send("Unsupported browser");
 	}
 });
-
 // Start the server
 const PORT = 3000;
 app.listen(PORT, () => {
