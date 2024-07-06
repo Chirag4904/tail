@@ -24,7 +24,7 @@ app.get("/start", (req, res) => {
 			});
 			break;
 		case "firefox":
-			exec(`start firefox ${url}`, (error, stdout, stderr) => {
+			exec(`start firefox  ${url}`, (error, stdout, stderr) => {
 				if (error) {
 					console.error(`Error starting Firefox: ${error.message}`);
 					res.status(500).send("Failed to start Firefox");
@@ -71,6 +71,13 @@ app.get("/stop", (req, res) => {
 	}
 });
 
+function cleanUp() {
+	exec(
+		`rm ~/.mozilla/firefox/*.default/*.sqlite ~/.mozilla/firefox/*default/sessionstore.js`
+	);
+	exec(`rm -r ~/.cache/mozilla/firefox/*.default/*`);
+}
+
 // API to cleanup browser session information
 app.get("/cleanup", (req, res) => {
 	const browser = req.query.browser.toLowerCase();
@@ -88,15 +95,7 @@ app.get("/cleanup", (req, res) => {
 			});
 			break;
 		case "firefox":
-			exec(`start firefox --delete-profile`, (error, stdout, stderr) => {
-				if (error) {
-					console.error(`Error cleaning up Firefox: ${error.message}`);
-					res.status(500).send("Failed to cleanup Firefox");
-					return;
-				}
-				console.log("Firefox session cleaned up");
-				res.send("Firefox session cleaned up");
-			});
+			cleanUp();
 			break;
 		default:
 			res.status(400).send("Unsupported browser");
