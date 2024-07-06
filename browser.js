@@ -1,6 +1,7 @@
 const express = require("express");
 const { exec } = require("child_process");
 const app = express();
+const { platform } = require("os");
 
 // Middleware to parse JSON and URL-encoded bodies
 app.use(express.json());
@@ -10,10 +11,15 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/start", (req, res) => {
 	const browser = req.query.browser.toLowerCase();
 	const url = req.query.url;
-
+	let command;
 	switch (browser) {
 		case "chrome":
-			exec(`start chrome ${url}`, (error, stdout, stderr) => {
+			if (process.platform === "win32") {
+				command = `start chrome ${url}`;
+			} else if (process.platform === "darwin") {
+				command = `open -a Google Chrome ${url}`;
+			}
+			exec(command, (error, stdout, stderr) => {
 				if (error) {
 					console.error(`Error starting Chrome: ${error.message}`);
 					res.status(500).send("Failed to start Chrome");
@@ -24,7 +30,12 @@ app.get("/start", (req, res) => {
 			});
 			break;
 		case "firefox":
-			exec(`start firefox  ${url}`, (error, stdout, stderr) => {
+			if (process.platform === "win32") {
+				command = `start firefox ${url}`;
+			} else if (process.platform === "darwin") {
+				command = `open -a Firefox ${url}`;
+			}
+			exec(command, (error, stdout, stderr) => {
 				if (error) {
 					console.error(`Error starting Firefox: ${error.message}`);
 					res.status(500).send("Failed to start Firefox");
