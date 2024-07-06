@@ -17,7 +17,7 @@ app.get("/start", (req, res) => {
 			if (process.platform === "win32") {
 				command = `start chrome ${url}`;
 			} else if (process.platform === "darwin") {
-				command = `open -a Google Chrome ${url}`;
+				command = `open -a "Google Chrome" ${url}`;
 			}
 			exec(command, (error, stdout, stderr) => {
 				if (error) {
@@ -33,7 +33,7 @@ app.get("/start", (req, res) => {
 			if (process.platform === "win32") {
 				command = `start firefox ${url}`;
 			} else if (process.platform === "darwin") {
-				command = `open -a Firefox ${url}`;
+				command = `open -a "Firefox" ${url}`;
 			}
 			exec(command, (error, stdout, stderr) => {
 				if (error) {
@@ -53,10 +53,16 @@ app.get("/start", (req, res) => {
 // API to stop/close a browser
 app.get("/stop", (req, res) => {
 	const browser = req.query.browser.toLowerCase();
-
+	let command;
 	switch (browser) {
 		case "chrome":
-			exec(`taskkill /F /IM chrome.exe`, (error, stdout, stderr) => {
+			if (process.platform === "win32") {
+				command = `taskkill /F /IM chrome.exe`;
+			} else if (process.platform === "darwin") {
+				command = `pkill -f "Google Chrome"`;
+			}
+
+			exec(command, (error, stdout, stderr) => {
 				if (error) {
 					console.error(`Error stopping Chrome: ${error.message}`);
 					res.status(500).send("Failed to stop Chrome");
@@ -67,7 +73,12 @@ app.get("/stop", (req, res) => {
 			});
 			break;
 		case "firefox":
-			exec(`taskkill /F /IM firefox.exe`, (error, stdout, stderr) => {
+			if (process.platform === "win32") {
+				command = `taskkill /F /IM firefox.exe`;
+			} else if (process.platform === "darwin") {
+				command = `pkill -f "Firefox"`;
+			}
+			exec(command, (error, stdout, stderr) => {
 				if (error) {
 					console.error(`Error stopping Firefox: ${error.message}`);
 					res.status(500).send("Failed to stop Firefox");
