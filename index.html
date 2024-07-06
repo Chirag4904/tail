@@ -1,43 +1,57 @@
 <!-- index.html -->
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Log Watcher</title>
-		<style>
-			#log {
-				white-space: pre-wrap;
-				font-family: monospace;
-				border: 1px solid #ccc;
-				padding: 10px;
-				height: 400px;
-				overflow-y: scroll;
-			}
-		</style>
-	</head>
-	<body>
-		<h1>Log Watcher</h1>
-		<div id="log"></div>
-		<script>
-			const logDiv = document.getElementById("log");
-			const ws = new WebSocket("ws://localhost:8082");
+<head>
+    <!-- Title of the web page -->
+    <title>Log Watcher</title>
+    <style>
+        /* Style for the log display area */
+        #log {
+            white-space: pre-wrap; /* Preserve white spaces and line breaks */
+            font-family: monospace; /* Use a monospace font for better readability of log lines */
+            border: 1px solid #ccc; /* Add a border around the log area */
+            padding: 10px; /* Add padding inside the log area */
+            height: 400px; /* Set the height of the log area */
+            overflow-y: scroll; /* Enable vertical scrolling if the content overflows */
+        }
+    </style>
+</head>
+<body>
+    <!-- Heading of the page -->
+    <h1>Log Watcher</h1>
+    <!-- Div element to display the log content -->
+    <div id="log"></div>
 
-			ws.onmessage = (event) => {
-				const lines = JSON.parse(event.data);
-				lines.forEach((line) => {
-					const logLine = document.createElement("div");
-					logLine.textContent = line;
-					logDiv.appendChild(logLine);
-				});
-				logDiv.scrollTop = logDiv.scrollHeight;
-			};
+    <script>
+        // Get the log div element by its ID
+        const logDiv = document.getElementById("log");
 
-			ws.onopen = () => {
-				console.log("Connected to server");
-			};
+        // Create a new WebSocket connection to the server at ws://localhost:8082
+        const ws = new WebSocket("ws://localhost:8082");
 
-			ws.onclose = () => {
-				console.log("Disconnected from server");
-			};
-		</script>
-	</body>
+        // Event handler for when a message is received from the server
+        ws.onmessage = (event) => {
+            // Parse the incoming message as JSON
+            const lines = JSON.parse(event.data);
+            // For each line received, create a new div element to display it
+            lines.forEach((line) => {
+                const logLine = document.createElement("div");
+                logLine.textContent = line; // Set the text content of the new div to the log line
+                logDiv.appendChild(logLine); // Append the new div to the log display area
+            });
+            // Scroll the log display area to the bottom to show the latest log line
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+
+        // Event handler for when the WebSocket connection is opened
+        ws.onopen = () => {
+            console.log("Connected to server"); // Log a message indicating the connection was successful
+        };
+
+        // Event handler for when the WebSocket connection is closed
+        ws.onclose = () => {
+            console.log("Disconnected from server"); // Log a message indicating the connection was closed
+        };
+    </script>
+</body>
 </html>
